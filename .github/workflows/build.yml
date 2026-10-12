@@ -1,0 +1,48 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract Project
+        run: |
+          mkdir project
+          unzip -o project-full.zip -d project/
+
+      - name: Download Godot 4.7.2
+        run: |
+          wget -q https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          unzip -o Godot_v4.7.2-stable_linux.x86_64.zip
+          chmod +x Godot_v4.7.2-stable_linux.x86_64
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Import Project
+        run: |
+          ./Godot_v4.7.2-stable_linux.x86_64 --headless --path project --import --quit || true
+
+      - name: Build APK
+        run: |
+          mkdir -p build
+          ./Godot_v4.7.2-stable_linux.x86_64 --headless --path project --export-debug "Android" ../build/RahBiRah.apk || ./Godot_v4.7.2-stable_linux.x86_64 --headless --path project --export-debug "android" ../build/RahBiRah.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: RahBiRah-APK
+          path: build/RahBiRah.apk
