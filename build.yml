@@ -1,0 +1,55 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Extract Project
+        run: |
+          mkdir -p project
+          unzip -o project-full.zip -d project/
+          ls -la project/
+
+      - name: Download Godot 4.7.2
+        run: |
+          wget -q https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          unzip -o Godot_v4.7.2-stable_linux.x86_64.zip
+          chmod +x Godot_v4.7.2-stable_linux.x86_64
+
+      - name: Download Export Templates
+        run: |
+          wget -q https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_export_templates.tpz
+          mkdir -p ~/.local/share/godot/export_templates/4.7.2.stable/
+          unzip -o Godot_v4.7.2-stable_export_templates.tpz
+          mv templates/* ~/.local/share/godot/export_templates/4.7.2.stable/
+
+      - name: Import Project
+        run: |
+          ./Godot_v4.7.2-stable_linux.x86_64 --headless --path project --import --quit || true
+
+      - name: Build APK
+        run: |
+          mkdir -p build
+          ./Godot_v4.7.2-stable_linux.x86_64 --headless --path project --export-debug "Android" ../build/RahBiRah.apk || true
+          ls -la build/
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: RahBiRah-APK
+          path: build/RahBiRah.apk
+          if-no-files-found: warn
