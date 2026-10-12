@@ -12,10 +12,33 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        run: |
+          mkdir -p $HOME/android-sdk/cmdline-tools
+          cd $HOME/android-sdk/cmdline-tools
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline.zip
+          unzip -q cmdline.zip
+          mv cmdline-tools latest 2>/dev/null || true
+          echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
+          echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
+
+      - name: Install Android Packages
+        run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
+
       - name: Extract Project
         run: |
-          mkdir project
+          mkdir -p project
           unzip -o project-full.zip -d project/
+          ls -la project/
 
       - name: Download Godot 4.7.2
         run: |
@@ -23,14 +46,12 @@ jobs:
           unzip -o Godot_v4.7.2-stable_linux.x86_64.zip
           chmod +x Godot_v4.7.2-stable_linux.x86_64
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
+      - name: Download Export Templates
+        run: |
+          wget -q https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_export_templates.tpz
+          mkdir -p ~/.local/share/godot/export_templates/4.7.2.stable/
+          unzip -o Godot_v4.7.2-stable_export_templates.tpz
+          mv templates/* ~/.local/share/godot/export_templates/4.7.2.stable/
 
       - name: Import Project
         run: |
@@ -39,10 +60,12 @@ jobs:
       - name: Build APK
         run: |
           mkdir -p build
-          ./Godot_v4.7.2-stable_linux.x86_64 --headless --path project --export-debug "Android" ../build/RahBiRah.apk || ./Godot_v4.7.2-stable_linux.x86_64 --headless --path project --export-debug "android" ../build/RahBiRah.apk
+          ./Godot_v4.7.2-stable_linux.x86_64 --headless --path project --export-debug "Android" ../build/RahBiRah.apk || true
+          ls -la build/
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: RahBiRah-APK
           path: build/RahBiRah.apk
+          if-no-files-found: warn
