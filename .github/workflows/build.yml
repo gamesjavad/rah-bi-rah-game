@@ -70,42 +70,29 @@ jobs:
         run: |
           keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android -keystore $HOME/debug.keystore -storepass android -dname "CN=Android Debug,O=Android,C=US" -validity 9999 -deststoretype pkcs12
 
-      - name: Install Pillow
-        run: pip install Pillow
-
-      - name: Create Android Icons
+      - name: Fix Missing icon_background
         run: |
           python3 << 'PYEOF'
-          from PIL import Image, ImageDraw
           import os
+          import shutil
 
-          def create_icon(size):
-              img = Image.new('RGBA', (size, size), (60, 40, 20, 255))
-              draw = ImageDraw.Draw(img)
-              margin = size // 8
-              draw.rectangle([margin, margin, size-margin, size-margin], fill=(200, 160, 90, 255))
-              return img
-
-          base = 'project/android/build/src/main/res'
-          sizes = {
-              'mipmap-mdpi': 48,
-              'mipmap-hdpi': 72,
-              'mipmap-xhdpi': 96,
-              'mipmap-xxhdpi': 144,
-              'mipmap-xxxhdpi': 192,
-          }
-
-          for folder, size in sizes.items():
-              path = os.path.join(base, folder)
-              os.makedirs(path, exist_ok=True)
-              icon = create_icon(size)
-              icon.save(os.path.join(path, 'icon.png'))
-              icon.save(os.path.join(path, 'icon_background.png'))
-              icon.save(os.path.join(path, 'icon_foreground.png'))
-              icon.save(os.path.join(path, 'icon_round.png'))
-              print(f"Created icons in {path}")
-
-          print("Done!")
+          base = 'project/android/build'
+          count = 0
+          for root, dirs, files in os.walk(base):
+              for f in files:
+                  if 'icon_foreground' in f and 'icon_background' not in f:
+                      ext = os.path.splitext(f)[1]
+                      bg_name = f.replace('foreground', 'background')
+                      bg_path = os.path.join(root, bg_name)
+                      if not os.path.exists(bg_path):
+                          for candidate in ['icon' + ext, 'icon.png', 'icon.webp']:
+                              src = os.path.join(root, candidate)
+                              if os.path.exists(src):
+                                  shutil.copy(src, bg_path)
+                                  print(f"Created {bg_path}")
+                                  count += 1
+                                  break
+          print(f"Total: {count} files created")
           PYEOF
 
       - name: Download Godot 4.7.2
