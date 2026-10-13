@@ -70,6 +70,25 @@ jobs:
         run: |
           keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android -keystore $HOME/debug.keystore -storepass android -dname "CN=Android Debug,O=Android,C=US" -validity 9999 -deststoretype pkcs12
 
+      - name: Fix Missing Icons
+        run: |
+          cd project/android/build
+          for dir in src/main/res/mipmap-mdpi src/main/res/mipmap-hdpi src/main/res/mipmap-xhdpi src/main/res/mipmap-xxhdpi src/main/res/mipmap-xxxhdpi; do
+            mkdir -p $dir
+            if [ ! -f "$dir/icon_background.png" ]; then
+              if [ -f "$dir/icon.png" ]; then
+                cp "$dir/icon.png" "$dir/icon_background.png" || true
+              fi
+            fi
+            if [ ! -f "$dir/icon_foreground.png" ]; then
+              if [ -f "$dir/icon.png" ]; then
+                cp "$dir/icon.png" "$dir/icon_foreground.png" || true
+              fi
+            fi
+          done
+          ls -la src/main/res/mipmap-hdpi/ || true
+          cd ../../..
+
       - name: Download Godot 4.7.2
         run: |
           wget -q https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
