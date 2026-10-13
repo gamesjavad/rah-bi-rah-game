@@ -70,24 +70,43 @@ jobs:
         run: |
           keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android -keystore $HOME/debug.keystore -storepass android -dname "CN=Android Debug,O=Android,C=US" -validity 9999 -deststoretype pkcs12
 
-      - name: Fix Missing Icons
+      - name: Install Pillow
+        run: pip install Pillow
+
+      - name: Create Android Icons
         run: |
-          cd project/android/build
-          for dir in src/main/res/mipmap-mdpi src/main/res/mipmap-hdpi src/main/res/mipmap-xhdpi src/main/res/mipmap-xxhdpi src/main/res/mipmap-xxxhdpi; do
-            mkdir -p $dir
-            if [ ! -f "$dir/icon_background.png" ]; then
-              if [ -f "$dir/icon.png" ]; then
-                cp "$dir/icon.png" "$dir/icon_background.png" || true
-              fi
-            fi
-            if [ ! -f "$dir/icon_foreground.png" ]; then
-              if [ -f "$dir/icon.png" ]; then
-                cp "$dir/icon.png" "$dir/icon_foreground.png" || true
-              fi
-            fi
-          done
-          ls -la src/main/res/mipmap-hdpi/ || true
-          cd ../../..
+          python3 << 'PYEOF'
+          from PIL import Image, ImageDraw
+          import os
+
+          def create_icon(size):
+              img = Image.new('RGBA', (size, size), (60, 40, 20, 255))
+              draw = ImageDraw.Draw(img)
+              margin = size // 8
+              draw.rectangle([margin, margin, size-margin, size-margin], fill=(200, 160, 90, 255))
+              return img
+
+          base = 'project/android/build/src/main/res'
+          sizes = {
+              'mipmap-mdpi': 48,
+              'mipmap-hdpi': 72,
+              'mipmap-xhdpi': 96,
+              'mipmap-xxhdpi': 144,
+              'mipmap-xxxhdpi': 192,
+          }
+
+          for folder, size in sizes.items():
+              path = os.path.join(base, folder)
+              os.makedirs(path, exist_ok=True)
+              icon = create_icon(size)
+              icon.save(os.path.join(path, 'icon.png'))
+              icon.save(os.path.join(path, 'icon_background.png'))
+              icon.save(os.path.join(path, 'icon_foreground.png'))
+              icon.save(os.path.join(path, 'icon_round.png'))
+              print(f"Created icons in {path}")
+
+          print("Done!")
+          PYEOF
 
       - name: Download Godot 4.7.2
         run: |
