@@ -53,7 +53,6 @@ jobs:
           unzip -o project-full.zip -d project/
           ls -la project/
           ls -la project/android/build/ || echo "No android/build folder"
-          ls -la project/android/build/libs/ 2>/dev/null || echo "No libs folder"
 
       - name: Download Godot AAR Library
         run: |
@@ -103,23 +102,22 @@ jobs:
           import os
           import shutil
 
-          base = 'project/android/build/src/main/res'
-          for folder in os.listdir(base):
-              path = os.path.join(base, folder)
-              if not os.path.isdir(path):
-                  continue
-              files = os.listdir(path)
+          count = 0
+          for root, dirs, files in os.walk('project/android'):
               for f in files:
                   if 'icon_foreground' in f:
                       ext = os.path.splitext(f)[1]
                       bg_name = f.replace('foreground', 'background')
-                      bg_path = os.path.join(path, bg_name)
+                      bg_path = os.path.join(root, bg_name)
                       if not os.path.exists(bg_path):
-                          icon_path = os.path.join(path, 'icon' + ext)
-                          if os.path.exists(icon_path):
-                              shutil.copy(icon_path, bg_path)
-                              print(f"Created {bg_path}")
-          print("Done!")
+                          for candidate in ['icon' + ext, 'icon.png', 'icon.webp']:
+                              src = os.path.join(root, candidate)
+                              if os.path.exists(src):
+                                  shutil.copy(src, bg_path)
+                                  print(f"Created {bg_path}")
+                                  count += 1
+                                  break
+          print(f"Total: {count} files created")
           PYEOF
 
       - name: Fix Gradle Permissions
