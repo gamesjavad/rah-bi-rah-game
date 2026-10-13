@@ -40,6 +40,20 @@ jobs:
           unzip -o project-full.zip -d project/
           ls -la project/
 
+      - name: Enable ETC2/ASTC
+        run: |
+          cd project
+          if grep -q "\[rendering\]" project.godot; then
+            sed -i '/^\[rendering\]/a textures/vram_compression/import_etc2_astc=true' project.godot
+          else
+            echo "" >> project.godot
+            echo "[rendering]" >> project.godot
+            echo "textures/vram_compression/import_etc2_astc=true" >> project.godot
+          fi
+          echo "--- Modified project.godot ---"
+          cat project.godot
+          cd ..
+
       - name: Download Godot 4.7.2
         run: |
           wget -q https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
@@ -60,7 +74,7 @@ jobs:
       - name: Build APK
         run: |
           mkdir -p build
-          ./Godot_v4.7.2-stable_linux.x86_64 --headless --path project --export-debug "Android" ../build/RahBiRah.apk || true
+          ./Godot_v4.7.2-stable_linux.x86_64 --headless --path project --export-debug "Android" ../build/RahBiRah.apk
           ls -la build/
 
       - name: Upload APK
@@ -68,4 +82,3 @@ jobs:
         with:
           name: RahBiRah-APK
           path: build/RahBiRah.apk
-          if-no-files-found: warn
