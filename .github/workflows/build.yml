@@ -50,8 +50,6 @@ jobs:
             echo "[rendering]" >> project.godot
             echo "textures/vram_compression/import_etc2_astc=true" >> project.godot
           fi
-          echo "--- Modified project.godot ---"
-          cat project.godot
           cd ..
 
       - name: Download Godot 4.7.2
@@ -66,6 +64,11 @@ jobs:
           mkdir -p ~/.local/share/godot/export_templates/4.7.2.stable/
           unzip -o Godot_v4.7.2-stable_export_templates.tpz
           mv templates/* ~/.local/share/godot/export_templates/4.7.2.stable/
+
+      - name: Fix Gradle Permissions
+        run: |
+          chmod +x project/android/build/gradlew || true
+          ls -la project/android/build/gradlew
 
       - name: Import Project
         run: |
