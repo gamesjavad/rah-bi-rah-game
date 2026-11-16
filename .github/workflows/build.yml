@@ -52,31 +52,6 @@ jobs:
           mkdir -p project
           unzip -o project-full.zip -d project/
           ls -la project/
-          ls -la project/android/build/ || echo "No android/build folder"
-
-      - name: Download Godot AAR Library
-        run: |
-          cd ~/.local/share/godot/export_templates/4.7.2.stable/
-          mkdir -p android_source
-          unzip -o android_source.zip -d android_source/
-          find android_source -name "*.aar" -exec ls -la {} \;
-          mkdir -p $GITHUB_WORKSPACE/project/android/build/libs/debug
-          mkdir -p $GITHUB_WORKSPACE/project/android/build/libs/release
-          find android_source -name "godot-lib.template_debug.aar" -exec cp {} $GITHUB_WORKSPACE/project/android/build/libs/debug/ \;
-          find android_source -name "godot-lib.template_release.aar" -exec cp {} $GITHUB_WORKSPACE/project/android/build/libs/release/ \;
-          ls -la $GITHUB_WORKSPACE/project/android/build/libs/debug/
-
-      - name: Enable ETC2/ASTC
-        run: |
-          cd project
-          if grep -q "\[rendering\]" project.godot; then
-            sed -i '/^\[rendering\]/a textures/vram_compression/import_etc2_astc=true' project.godot
-          else
-            echo "" >> project.godot
-            echo "[rendering]" >> project.godot
-            echo "textures/vram_compression/import_etc2_astc=true" >> project.godot
-          fi
-          cd ..
 
       - name: Setup Godot Editor Settings
         run: |
@@ -96,37 +71,16 @@ jobs:
         run: |
           keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android -keystore $HOME/debug.keystore -storepass android -dname "CN=Android Debug,O=Android,C=US" -validity 9999 -deststoretype pkcs12
 
-      - name: Fix Missing Icons
+      - name: Install Android Build Template & Import Project
         run: |
-          python3 << 'PYEOF'
-          import os
-          import shutil
-
-          count = 0
-          for root, dirs, files in os.walk('project/android'):
-              for f in files:
-                  if 'icon_foreground' in f:
-                      ext = os.path.splitext(f)[1]
-                      bg_name = f.replace('foreground', 'background')
-                      bg_path = os.path.join(root, bg_name)
-                      if not os.path.exists(bg_path):
-                          for candidate in ['icon' + ext, 'icon.png', 'icon.webp']:
-                              src = os.path.join(root, candidate)
-                              if os.path.exists(src):
-                                  shutil.copy(src, bg_path)
-                                  print(f"Created {bg_path}")
-                                  count += 1
-                                  break
-          print(f"Total: {count} files created")
-          PYEOF
+          # این دستور به صورت خودکار پوشه android و فایل های aar را می سازد
+          ./Godot_v4.7.2-stable_linux.x86_64 --headless --path project --install-android-build-template
+          # این دستور پروژه را ایمپورت می کند
+          ./Godot_v4.7.2-stable_linux.x86_64 --headless --path project --import --quit || true
 
       - name: Fix Gradle Permissions
         run: |
           chmod +x project/android/build/gradlew || true
-
-      - name: Import Project
-        run: |
-          ./Godot_v4.7.2-stable_linux.x86_64 --headless --path project --import --quit || true
 
       - name: Build APK
         run: |
