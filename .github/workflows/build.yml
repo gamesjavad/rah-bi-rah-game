@@ -72,19 +72,11 @@ jobs:
         run: |
           keytool -keyalg RSA -genkeypair -alias androiddebugkey -keypass android -keystore $HOME/debug.keystore -storepass android -dname "CN=Android Debug,O=Android,C=US" -validity 9999 -deststoretype pkcs12
 
-      - name: Install Android Build Template
-        run: |
-          timeout 120 ./Godot_v4.7.2-stable_linux.x86_64 --headless --path project --install-android-build-template || true
-          
-      - name: Fix Gradle Permissions
-        run: |
-          chmod +x project/android/build/gradlew || true
-
       - name: Build APK
         run: |
           mkdir -p build
-          # اینبار || true را برداشتم تا اگر خطایی رخ دهد، همانجا متوقف شود و خطا را نشان دهد
-          ./Godot_v4.7.2-stable_linux.x86_64 --headless --path project --export-debug "Android" "../build/RahBiRah.apk"
+          # دستور نصب قالب و خروجی گرفتن در یک خط ترکیب شده‌اند
+          ./Godot_v4.7.2-stable_linux.x86_64 --headless --verbose --install-android-build-template --export-debug "Android" "../build/RahBiRah.apk"
           adb kill-server || true
           ls -la build/
 
