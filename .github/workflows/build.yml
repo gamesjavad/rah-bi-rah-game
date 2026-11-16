@@ -75,8 +75,8 @@ jobs:
       - name: Build APK
         run: |
           mkdir -p build
-          # دستور نصب قالب و خروجی گرفتن در یک خط ترکیب شده‌اند
-          ./Godot_v4.7.2-stable_linux.x86_64 --headless --verbose --install-android-build-template --export-debug "Android" "../build/RahBiRah.apk"
+          # ترتیب صحیح: مسیر پروژه مشخص شده و دستور نصب قالب در انتها قرار گرفته است
+          ./Godot_v4.7.2-stable_linux.x86_64 --headless --path project --export-debug "Android" "../build/RahBiRah.apk" --install-android-build-template
           adb kill-server || true
           ls -la build/
 
